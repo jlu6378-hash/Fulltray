@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "656570692884",
+    "project_id": "community-plate-project",
+    "storage_bucket": "community-plate-project.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:656570692884:android:f7c32e0479c09027597e01",
+        "android_client_info": {
+          "package_name": "com.example.communityplateproject2"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDOEeGEsZz4gFOr8XzuR87rzIzIBFtBosU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
