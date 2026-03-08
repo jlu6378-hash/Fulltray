@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:communityplateproject2/SearchItem.dart';
 
 class FoodItem {
   final String id;
@@ -12,6 +13,7 @@ class FoodItem {
   final String? requester;
   final String? image;
   final DateTime createdAt;
+  final GeoPoint? location;
 
   FoodItem({
     required this.id,
@@ -24,7 +26,8 @@ class FoodItem {
     required this.donor,
     this.requester,
     this.image,
-    required this.createdAt
+    required this.createdAt,
+    this.location,
   });
 
   factory FoodItem.fromFirestore(DocumentSnapshot doc) {
@@ -36,11 +39,26 @@ class FoodItem {
       quantity: data['quantity'] ?? '',
       expirationDate: (data['expirationDate'] as Timestamp).toDate(),
       address: data['address'] ?? '',
-      notes: data['notes'] ?? '',
+      notes: data['notes'],
       donor: data['donor'] ?? '',
-      requester: data['requester'] ?? '',
-      image: data['image'] ?? '',
+      requester: data['requester'],
+      image: data['image'],
+      location: data['location'], // GeoPoint
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+    );
+  }
+
+  SearchItem fromFoodItem(FoodItem item) {
+    return SearchItem(
+      id: item.id,
+      name: item.name,
+      type: item.type,
+      quantity: item.quantity,
+      address: item.address,
+      notes: item.notes ?? '',
+      isDonation: true,
+      lat: item.location?.latitude,
+      lng: item.location?.longitude,
     );
   }
 
@@ -55,7 +73,8 @@ class FoodItem {
       'donor' : donor,
       'requester' : requester,
       'image' : image,
-      'createdAt' : createdAt
+      'createdAt' : createdAt,
+      'location' : location
     };
   }
 }

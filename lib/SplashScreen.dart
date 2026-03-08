@@ -26,12 +26,12 @@ class _splashscreenState extends State<splashscreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        backgroundColor: Color.fromARGB(255, 62, 106, 85),
+        backgroundColor: Colors.white,
         body: Center(
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text("COMMUNITY PLATE PROJECT",
+                Text("Fulltray",
                   textAlign: TextAlign.center,
                   style: TextStyle(
                       fontFamily: 'Koulen',
@@ -41,7 +41,7 @@ class _splashscreenState extends State<splashscreen> {
                   ),
                 ),
                 SizedBox(height: 30,),
-                Image.asset('assets/cpp_logo_white.png', height: 350),
+                Image.asset('assets/Fulltray_logo.png', height: 350),
               ],
             )
         )

@@ -1,5 +1,6 @@
 import 'package:communityplateproject2/DonateFood.dart';
 import 'package:communityplateproject2/DonateFood2.dart';
+import 'package:communityplateproject2/Firebase/ai_search_service.dart';
 import 'package:communityplateproject2/ProfilePage.dart';
 import 'package:communityplateproject2/RequestFood.dart';
 import 'package:communityplateproject2/RequestFood2.dart';
@@ -10,7 +11,9 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:communityplateproject2/Firebase/firebase_service.dart';
 import 'package:communityplateproject2/Firebase/food_item.dart';
 import 'package:communityplateproject2/Firebase/food_request.dart';
-
+import 'package:communityplateproject2/SearchItem.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Home extends StatefulWidget {
   const Home({super.key});
@@ -20,6 +23,41 @@ class Home extends StatefulWidget {
 }
 
 class _HomeState extends State<Home> {
+  final TextEditingController _searchController = TextEditingController();
+  final AISearchService _aiSearch = AISearchService();
+  final FirebaseService _firebaseService = FirebaseService();
+  List<SearchItem> _results = [];
+  bool _loading = false;
+  double? _userLat;
+  double? _userLng;
+
+  Future<void> _loadUserLocation() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+
+    final data = doc.data();
+    if (data == null) return;
+
+    final GeoPoint? location = data['location'];
+    if (location != null) {
+      setState(() {
+        _userLat = location.latitude;
+        _userLng = location.longitude;
+      });
+    }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUserLocation();
+  }
+
   //initialize food item
   FoodItem f = FoodItem(id: "123", name: "name", type: "type", quantity: "quantity", expirationDate: DateTime.now(), address: "address", donor: "donor", createdAt: DateTime.now());
 
@@ -48,21 +86,62 @@ class _HomeState extends State<Home> {
             SizedBox(
                 width: 375,
                 height: 45,
-                child: Expanded(
-                  child: TextField(
-                    obscureText: false,
-                    decoration: InputDecoration(
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)
-                      ),
-                      labelText: "Search",
+                child: TextField(
+                  controller: _searchController,
+                  obscureText: false,
+                  decoration: InputDecoration(
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)
                     ),
-                    // onChanged: (String newEntry){
-                    //   print("Password entered");
-                    // },
+                    labelText: "Search (AI-powered results)",
+                    hintText: "Fruits near me, etc.",
+                    hintStyle: TextStyle(
+                      color: Colors.grey
+                    ),
                   ),
+                  onSubmitted: (value) async {
+                    if (_userLat == null || _userLng == null) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Set your location in your profile first")),
+                      );
+                      return;
+                    }
+
+                    setState(() => _loading = true);
+
+                    final allItems = await _firebaseService.fetchAllSearchItems();
+                    final results = await _aiSearch.aiSearchFood(
+                      value,
+                      allItems,
+                      _userLat!,
+                      _userLng!,
+                    );
+
+                    setState(() {
+                      _results = results;
+                      _loading = false;
+                    });
+                  },
                 ),
             ),
+            if (_loading)
+              const CircularProgressIndicator(),
+
+            if (!_loading && _results.isNotEmpty)
+              SizedBox(
+                height: 200,
+                child: ListView(
+                  children: _results.map((item) {
+                    return ListTile(
+                      title: Text(item.name),
+                      subtitle: Text(
+                        "${item.type} • ${item.quantity} • "
+                            "${item.isDonation ? 'Donated' : 'Requested'}",
+                      ),
+                    );
+                  }).toList(),
+                ),
+              ),
             /*
             Container(
               margin: EdgeInsets.fromLTRB(12.5, 7, 12.5, 7),

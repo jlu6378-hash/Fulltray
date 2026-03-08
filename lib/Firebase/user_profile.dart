@@ -11,6 +11,7 @@ class UserProfile {
   final List<String> donations;
   final List<String> requests;
   final DateTime createdAt;
+  final GeoPoint? location;
 
   UserProfile({
     required this.id,
@@ -21,7 +22,8 @@ class UserProfile {
     this.photo,
     required this.donations,
     required this.requests,
-    required this.createdAt
+    required this.createdAt,
+    this.location,
   });
 
   factory UserProfile.fromFirestore(DocumentSnapshot doc) {
@@ -36,6 +38,7 @@ class UserProfile {
       donations: List<String>.from(data['donations'] ?? []),
       requests: List<String>.from(data['requests'] ?? []),
       createdAt: (data['createdAt'] as Timestamp).toDate(),
+      location: data['location'],
     );
   }
 
@@ -49,6 +52,7 @@ class UserProfile {
       'donations' : donations,
       'requests' : requests,
       'createdAt': Timestamp.fromDate(createdAt),
+      'location': location,
     };
   }
 }

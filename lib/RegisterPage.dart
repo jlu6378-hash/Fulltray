@@ -17,6 +17,7 @@ class _registerpageState extends State<registerpage> {
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
+  final _addressController = TextEditingController();
 
   Future createNewUser(String email, String password) async {
     try{
@@ -118,6 +119,28 @@ class _registerpageState extends State<registerpage> {
                   ),
                   SizedBox(height:20),
                   SizedBox(
+                    width: 350,
+                    height: 45,
+                    child: TextFormField(
+                      controller: _addressController,
+                      obscureText: false,
+                      decoration: InputDecoration(
+                        contentPadding: EdgeInsets.all(12),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        hintText: "address (street, city, state)",
+                      ),
+                      validator: (String? address) {
+                        if (address == null || address.isEmpty) {
+                          return 'Please enter your address.';
+                        }
+                        return null;
+                      },
+                    ),
+                  ),
+                  SizedBox(height:20),
+                  SizedBox(
                       width: 350,
                       height: 45,
                       child: Expanded(
@@ -192,6 +215,19 @@ class _registerpageState extends State<registerpage> {
 
                                 final updatedUser = FirebaseAuth.instance.currentUser;
                                 print("Display name set to: ${updatedUser?.displayName}");
+
+                                final uid = cred.user!.uid;
+
+                                await FirebaseFirestore.instance
+                                    .collection('users')
+                                    .doc(uid)
+                                    .set({
+                                  "name": _nameController.text.trim(),
+                                  "email": _emailController.text.trim(),
+                                  "address": _addressController.text.trim(),
+                                  "locationSet": true, // address provided
+                                  "createdAt": FieldValue.serverTimestamp(),
+                                });
                                 Navigator.of(context).push(MaterialPageRoute(builder: (context) => const loginpage()));
                               } catch (e) {
                                 print("Error: $e");
@@ -200,57 +236,6 @@ class _registerpageState extends State<registerpage> {
                           }
                       )
                   )
-                  /*
-                  SizedBox(height: 30),
-                  Text("────────── or ──────────", style:TextStyle(color: Colors.grey, fontSize: 16)),
-                  SizedBox(height: 30),
-                  SizedBox(
-                      height: 45,
-                      width: 350,
-                      child: FilledButton(
-                        style: ButtonStyle(
-                            backgroundColor: MaterialStateProperty.all<Color>(Colors.grey.shade300),
-                            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                                RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                )
-                            )
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset('assets/google.png', height: 20),
-                            Text("  Continue with Google", style:TextStyle(color:Colors.black, fontSize: 16)),
-                          ],
-                        ),
-                        onPressed: (){},
-                      )
-                  ),
-                  SizedBox(height: 10),
-                  SizedBox(
-                      height: 45,
-                      width: 350,
-                      child: FilledButton(
-                        style: ButtonStyle(
-                            backgroundColor: MaterialStateProperty.all<Color>(Colors.grey.shade300),
-                            shape: MaterialStateProperty.all<RoundedRectangleBorder>(
-                                RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                )
-                            )
-                        ),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Image.asset('assets/apple.png', height: 20),
-                            Text("  Continue with Apple", style:TextStyle(color:Colors.black, fontSize: 16)),
-                          ],
-                        ),
-                        onPressed: (){},
-                      )
-                  ),
-
-                   */
                 ]
             ),
           )

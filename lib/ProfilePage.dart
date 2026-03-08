@@ -37,9 +37,19 @@ class _profileState extends State<profile> {
         }
 
         if (!snapshot.hasData || !snapshot.data!.exists) {
-          return Scaffold(
-            appBar: AppBar(title: const Text('Your Profile')),
-            body: const Center(child: Text("User profile not found.")),
+          // Auto-create missing profile
+          FirebaseFirestore.instance
+              .collection('users')
+              .doc(currentUser!.uid)
+              .set({
+            'name': currentUser!.displayName ?? '',
+            'email': currentUser!.email ?? '',
+            'address': '',
+            'createdAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
           );
         }
 

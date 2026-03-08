@@ -43,6 +43,8 @@ dependencies:
   flutter_dotenv: ^5.0.2
   openai_dart: ^0.5.5
   chat_gpt_sdk: ^3.1.5
+  geolocator: ^10.1.0
+  geocoding: ^2.2.0
 
 dev_dependencies:
   flutter_test:
@@ -74,6 +76,8 @@ flutter:
     - assets/cpp_logo_white.png
     - assets/images/placeholder.png
     - assets/.env
+    - assets/Fulltray_logo.png
+    - assets/Logo_nameless.png
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images

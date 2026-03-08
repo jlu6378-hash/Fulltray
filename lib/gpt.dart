@@ -4,6 +4,58 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:flutter/material.dart';
+import 'package:communityplateproject2/SearchItem.dart';
+
+class AiSearchService {
+  late final OpenAI _openAI;
+
+  AiSearchService() {
+    _openAI = OpenAI.instance.build(
+      token: dotenv.env['OPENAI_API_KEY'],
+      baseOption: HttpSetup(
+        receiveTimeout: const Duration(seconds: 30),
+      ),
+    );
+  }
+
+  Future<List<String>> filterItemsWithAI({
+    required String query,
+    required List<SearchItem> items,
+  }) async {
+    final compactItems = items.map((e) => e.toJson()).toList();
+
+    final prompt = """
+    You are a search engine for a food donation app.
+    
+    User search:
+    "$query"
+    
+    Items:
+    ${jsonEncode(compactItems)}
+    
+    Return only valid JSON in this format:
+    {
+      "matched_ids" : ["id1", "id2", "..."]
+    }
+    
+    Match by meaning and not exact words, include both donations and requests as long as they're relevant, and don't explain anything.
+    """;
+
+    final request = ChatCompleteText(
+      messages: [{"role": "user", "content": prompt}],
+      model: GptTurboChatModel(),
+      maxToken: 1500,
+    );
+
+    final response = await _openAI.onChatCompletion(request: request);
+
+    final decoded = jsonDecode(
+        response!.choices.first.message!.content.trim()
+    );
+
+    return List<String>.from(decoded["matched_ids"]);
+  }
+}
 
 class FoodCategorizer {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
@@ -26,9 +78,9 @@ class FoodCategorizer {
       final data = doc.data();
       return {
         "id" : doc.id,
-        "name" : data['Type'] ?? '',
-        "quantity" : data['Quantity'] ?? '',
-        "notes" : data["Notes"] ?? '',
+        "name" : data['name'] ?? '',
+        "quantity" : data['quantity'] ?? '',
+        "notes" : data["notes"] ?? '',
       };
     }).toList();
 

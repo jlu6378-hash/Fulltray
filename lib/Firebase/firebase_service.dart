@@ -1,9 +1,13 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:communityplateproject2/Firebase/food_request.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:communityplateproject2/LoginPage.dart';
 import 'package:communityplateproject2/RegisterPage.dart';
+import 'package:communityplateproject2/SearchItem.dart';
+import 'package:communityplateproject2/Firebase/food_item.dart';
 
 class FirebaseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -107,6 +111,41 @@ class FirebaseService {
     }
   }
 
+  Future<List<SearchItem>> fetchAllSearchItems() async {
+    final FirebaseFirestore _db = FirebaseFirestore.instance;
 
+    final donations = await _db.collection("Donated Food").get();
+    final requests = await _db.collection("Requested Food").get();
+
+    List<SearchItem> results = [];
+
+    for (var doc in donations.docs) {
+      final data = doc.data();
+      results.add(SearchItem(
+        id: doc.id,
+        name: data["name"] ?? "",
+        type: data["Type"] ?? "",
+        quantity: data["Quantity"] ?? "",
+        address: data["Address"] ?? "",
+        notes: data["Notes"] ?? "",
+        isDonation: true,
+      ));
+    }
+
+    for (var doc in requests.docs) {
+      final data = doc.data();
+      results.add(SearchItem(
+        id: doc.id,
+        name: data["name"] ?? "",
+        type: data["Type"] ?? "",
+        quantity: data["Quantity"] ?? "",
+        address: data["Address"] ?? "",
+        notes: data["Notes"] ?? "",
+        isDonation: false,
+      ));
+    }
+
+    return results;
+  }
 }
 

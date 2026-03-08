@@ -54,7 +54,7 @@ class _loginpageState extends State<loginpage> {
                     textAlign: TextAlign.center,
                   )
                 ),
-                Image.asset('assets/cpp_logo_green.png',
+                Image.asset('assets/Logo_nameless.png',
                     height: 200),
                 SizedBox(height: 20),
                 SizedBox(
