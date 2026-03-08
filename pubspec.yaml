@@ -43,7 +43,7 @@ dependencies:
   flutter_dotenv: ^5.0.2
   openai_dart: ^0.5.5
   chat_gpt_sdk: ^3.1.5
-  #comment
+
 
 dev_dependencies:
   flutter_test:
