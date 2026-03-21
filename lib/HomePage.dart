@@ -5,13 +5,13 @@ import 'package:communityplateproject2/ProfilePage.dart';
 import 'package:communityplateproject2/RequestFood.dart';
 import 'package:communityplateproject2/RequestFood2.dart';
 import 'package:communityplateproject2/Notifications.dart';
+import 'package:communityplateproject2/SearchResultsPage.dart';
 import 'package:dots_indicator/dots_indicator.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:communityplateproject2/Firebase/firebase_service.dart';
 import 'package:communityplateproject2/Firebase/food_item.dart';
 import 'package:communityplateproject2/Firebase/food_request.dart';
-import 'package:communityplateproject2/SearchItem.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -26,7 +26,6 @@ class _HomeState extends State<Home> {
   final TextEditingController _searchController = TextEditingController();
   final AISearchService _aiSearch = AISearchService();
   final FirebaseService _firebaseService = FirebaseService();
-  List<SearchItem> _results = [];
   bool _loading = false;
   double? _userLat;
   double? _userLng;
@@ -117,31 +116,24 @@ class _HomeState extends State<Home> {
                       _userLng!,
                     );
 
-                    setState(() {
-                      _results = results;
-                      _loading = false;
-                    });
+                    setState(() => _loading = false);
+
+                    if (!mounted) return;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => SearchResultsPage(
+                          query: value,
+                          results: results,
+                          userLat: _userLat!,
+                          userLng: _userLng!,
+                        ),
+                      ),
+                    );
                   },
                 ),
             ),
             if (_loading)
               const CircularProgressIndicator(),
-
-            if (!_loading && _results.isNotEmpty)
-              SizedBox(
-                height: 200,
-                child: ListView(
-                  children: _results.map((item) {
-                    return ListTile(
-                      title: Text(item.name),
-                      subtitle: Text(
-                        "${item.type} • ${item.quantity} • "
-                            "${item.isDonation ? 'Donated' : 'Requested'}",
-                      ),
-                    );
-                  }).toList(),
-                ),
-              ),
             /*
             Container(
               margin: EdgeInsets.fromLTRB(12.5, 7, 12.5, 7),

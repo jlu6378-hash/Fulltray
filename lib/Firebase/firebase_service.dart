@@ -121,27 +121,33 @@ class FirebaseService {
 
     for (var doc in donations.docs) {
       final data = doc.data();
+      final geo = data["location"] as GeoPoint?;
       results.add(SearchItem(
         id: doc.id,
         name: data["name"] ?? "",
-        type: data["Type"] ?? "",
-        quantity: data["Quantity"] ?? "",
-        address: data["Address"] ?? "",
-        notes: data["Notes"] ?? "",
+        type: data["type"] ?? data["Type"] ?? "",
+        quantity: data["quantity"] ?? data["Quantity"] ?? "",
+        address: data["address"] ?? data["Address"] ?? "",
+        notes: data["notes"] ?? data["Notes"] ?? "",
         isDonation: true,
+        lat: geo?.latitude,
+        lng: geo?.longitude,
       ));
     }
 
     for (var doc in requests.docs) {
       final data = doc.data();
+      final geo = data["location"] as GeoPoint?;
       results.add(SearchItem(
         id: doc.id,
         name: data["name"] ?? "",
-        type: data["Type"] ?? "",
-        quantity: data["Quantity"] ?? "",
-        address: data["Address"] ?? "",
-        notes: data["Notes"] ?? "",
+        type: data["type"] ?? data["Type"] ?? "",
+        quantity: data["quantity"] ?? data["Quantity"] ?? "",
+        address: data["address"] ?? data["Address"] ?? "",
+        notes: data["notes"] ?? data["Notes"] ?? "",
         isDonation: false,
+        lat: geo?.latitude,
+        lng: geo?.longitude,
       ));
     }
 

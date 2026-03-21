@@ -1,5 +1,7 @@
 import 'package:communityplateproject2/RequestHelper.dart';
 import 'package:communityplateproject2/ProfilePage.dart';
+import 'package:communityplateproject2/distance.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -16,6 +18,20 @@ class RequestFood2 extends StatefulWidget {
 class _RequestFood2State extends State<RequestFood2> {
 
   String? selectedCategory;
+
+  Future<GeoPoint?> _loadCurrentUserLocation() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return null;
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .get();
+    if (!userDoc.exists) return null;
+
+    final data = userDoc.data();
+    return data?['location'] as GeoPoint?;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,11 +65,16 @@ class _RequestFood2State extends State<RequestFood2> {
             ),
 
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection("Donated Food")
-                    .snapshots(),
-                builder: (context, snapshot) {
+              child: FutureBuilder<GeoPoint?>(
+                future: _loadCurrentUserLocation(),
+                builder: (context, userLocationSnapshot) {
+                  final userLocation = userLocationSnapshot.data;
+
+                  return StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection("Donated Food")
+                        .snapshots(),
+                    builder: (context, snapshot) {
                   // 1. Handle waiting state (first load)
                   if (snapshot.connectionState == ConnectionState.waiting) {
                     return const Center(child: CircularProgressIndicator());
@@ -76,6 +97,15 @@ class _RequestFood2State extends State<RequestFood2> {
                     itemBuilder: (context, index) {
                       final doc = docs[index].data() as Map<String, dynamic>;
                       final docSnap = docs[index];
+                      final itemLocation = doc["location"] as GeoPoint?;
+                      final computedDistance = (userLocation != null && itemLocation != null)
+                          ? calculateDistanceMiles(
+                              userLocation.latitude,
+                              userLocation.longitude,
+                              itemLocation.latitude,
+                              itemLocation.longitude,
+                            )
+                          : 0.0;
 
                       return RequestHelper(
                         id: docSnap.id,
@@ -84,12 +114,14 @@ class _RequestFood2State extends State<RequestFood2> {
                         image: doc["image"]?.toString() ?? "", // can be empty
                         personName: doc["requesterName"]?.toString() ?? "Anonymous",
                         quantity: doc["quantity"]?.toString() ?? "N/A",
-                        distance: double.tryParse(doc["distance"]?.toString() ?? "") ?? 0.0,
+                        distance: double.parse(computedDistance.toStringAsFixed(1)),
                         type: doc["type"]?.toString() ?? "N/A",
-                        expirationDate: DateFormat('MM/dd/yyyy').format(doc["earliestExpirationDate"].toDate()) ?? "N/A",
+                        expirationDate: DateFormat('MM/dd/yyyy').format(doc["earliestExpirationDate"].toDate()),
                         location: doc["address"]?.toString() ?? "N/A",
                         notes: doc["notes"]?.toString() ?? "",
                       );
+                    },
+                  );
                     },
                   );
                 },
