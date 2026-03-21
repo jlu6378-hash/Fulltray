@@ -105,7 +105,9 @@ class _RequestFood2State extends State<RequestFood2> {
                               itemLocation.latitude,
                               itemLocation.longitude,
                             )
-                          : 0.0;
+                          : null;
+                      final savedDistance = double.tryParse(doc["distance"]?.toString() ?? "");
+                      final distanceToShow = computedDistance ?? savedDistance ?? 0.0;
 
                       return RequestHelper(
                         id: docSnap.id,
@@ -114,7 +116,7 @@ class _RequestFood2State extends State<RequestFood2> {
                         image: doc["image"]?.toString() ?? "", // can be empty
                         personName: doc["requesterName"]?.toString() ?? "Anonymous",
                         quantity: doc["quantity"]?.toString() ?? "N/A",
-                        distance: double.parse(computedDistance.toStringAsFixed(1)),
+                        distance: double.parse(distanceToShow.toStringAsFixed(1)),
                         type: doc["type"]?.toString() ?? "N/A",
                         expirationDate: DateFormat('MM/dd/yyyy').format(doc["earliestExpirationDate"].toDate()),
                         location: doc["address"]?.toString() ?? "N/A",
