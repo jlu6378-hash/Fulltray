@@ -5,6 +5,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:communityplateproject2/HomePage.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:geocoding/geocoding.dart';
 import 'Firebase/food_request.dart';
 import 'Firebase/food_item.dart';
 import 'package:communityplateproject2/Firebase/firebase_service.dart';
@@ -60,6 +61,18 @@ class _DonateFood2State extends State<DonateFood2> {
     if (!userDoc.exists) return null;
 
     return userDoc.data();
+  }
+
+  Future<GeoPoint?> _geocodeAddress(String address) async {
+    if (address.isEmpty) return null;
+    try {
+      final locations = await locationFromAddress(address);
+      if (locations.isEmpty) return null;
+      final first = locations.first;
+      return GeoPoint(first.latitude, first.longitude);
+    } catch (_) {
+      return null;
+    }
   }
 
   @override
@@ -124,6 +137,8 @@ class _DonateFood2State extends State<DonateFood2> {
         final addressToSave = _addressController.text.trim().isNotEmpty
             ? _addressController.text.trim()
             : (profileAddress ?? '');
+        final geocodedLocation = await _geocodeAddress(addressToSave);
+        final locationToSave = geocodedLocation ?? profileLocation;
 
         final request = FoodRequest(
             id: '',
@@ -139,7 +154,7 @@ class _DonateFood2State extends State<DonateFood2> {
             address: addressToSave,
             earliestExpirationDate: DateTime.parse(_expirationController.text), //MUST BE IN yyyy-MM-dd format
             notes: _notesController.text,
-            location: profileLocation,
+            location: locationToSave,
         );
 
         _firebaseService.createFoodDonation(request);
