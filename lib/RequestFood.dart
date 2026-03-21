@@ -55,6 +55,19 @@ class _requestFoodState extends State<requestFood> {
   DateTime _selectedPickupTime = DateTime.now().add(const Duration(hours: 1));
   bool _isLoading = false;
 
+  Future<Map<String, dynamic>?> _getCurrentUserLocationData() async {
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (currentUser == null) return null;
+
+    final userDoc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(currentUser.uid)
+        .get();
+    if (!userDoc.exists) return null;
+
+    return userDoc.data();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -110,6 +123,14 @@ class _requestFoodState extends State<requestFood> {
           return;
         }
 
+        final userLocationData = await _getCurrentUserLocationData();
+        final profileLocation = userLocationData?['location'] as GeoPoint?;
+        final profileAddress = (userLocationData?['address'] as String?)?.trim();
+
+        final addressToSave = _addressController.text.trim().isNotEmpty
+            ? _addressController.text.trim()
+            : (profileAddress ?? '');
+
         final request = FoodRequest(
             id: '',
             name: _nameController.text,
@@ -121,9 +142,10 @@ class _requestFoodState extends State<requestFood> {
             pickupTime: _selectedPickupTime,
             //status: 'pending',
             createdAt: DateTime.now(),
-            address: _addressController.text,
+            address: addressToSave,
             earliestExpirationDate: DateTime.parse(_expirationController.text), //MUST BE IN yyyy-MM-dd format
-            notes: _notesController.text
+            notes: _notesController.text,
+            location: profileLocation,
         );
 
         _firebaseService.createFoodRequest(request);
