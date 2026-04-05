@@ -54,9 +54,9 @@ class _RequestFood2State extends State<RequestFood2> {
                     const SizedBox(width: 8),
                     _buildCategoryButton("Vegetables"),
                     const SizedBox(width: 8),
-                    _buildCategoryButton("Dairy"),
+                    _buildCategoryButton("Snacks"),
                     const SizedBox(width: 8),
-                    _buildCategoryButton("Drinks"),
+                    _buildCategoryButton("Meat"),
                     const SizedBox(width: 8),
                     _buildCategoryButton("Other"),
                   ],
@@ -91,12 +91,23 @@ class _RequestFood2State extends State<RequestFood2> {
                   }
 
                   final docs = snapshot.data!.docs;
+                  final filteredDocs = selectedCategory == null
+                      ? docs
+                      : docs.where((docSnap) {
+                          final data = docSnap.data() as Map<String, dynamic>;
+                          final type = (data["type"] ?? "").toString().toLowerCase();
+                          return type == selectedCategory!.toLowerCase();
+                        }).toList();
+
+                  if (filteredDocs.isEmpty) {
+                    return const Center(child: Text("No donations found for this category."));
+                  }
 
                   return ListView.builder(
-                    itemCount: docs.length,
+                    itemCount: filteredDocs.length,
                     itemBuilder: (context, index) {
-                      final doc = docs[index].data() as Map<String, dynamic>;
-                      final docSnap = docs[index];
+                      final doc = filteredDocs[index].data() as Map<String, dynamic>;
+                      final docSnap = filteredDocs[index];
                       final itemLocation = doc["location"] as GeoPoint?;
                       final computedDistance = (userLocation != null && itemLocation != null)
                           ? calculateDistanceMiles(

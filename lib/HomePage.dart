@@ -1,17 +1,17 @@
 import 'package:communityplateproject2/DonateFood.dart';
+import 'package:communityplateproject2/DonateConfirmation.dart';
 import 'package:communityplateproject2/DonateFood2.dart';
 import 'package:communityplateproject2/Firebase/ai_search_service.dart';
 import 'package:communityplateproject2/ProfilePage.dart';
+import 'package:communityplateproject2/RequestConfirmation.dart';
 import 'package:communityplateproject2/RequestFood.dart';
 import 'package:communityplateproject2/RequestFood2.dart';
 import 'package:communityplateproject2/Notifications.dart';
 import 'package:communityplateproject2/SearchResultsPage.dart';
-import 'package:dots_indicator/dots_indicator.dart';
+import 'package:communityplateproject2/category_images.dart';
 import 'package:flutter/material.dart';
-import 'package:carousel_slider/carousel_slider.dart';
 import 'package:communityplateproject2/Firebase/firebase_service.dart';
 import 'package:communityplateproject2/Firebase/food_item.dart';
-import 'package:communityplateproject2/Firebase/food_request.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -22,6 +22,26 @@ class Home extends StatefulWidget {
   State<Home> createState() => _HomeState();
 }
 
+class _TrendingListing {
+  final String id;
+  final String name;
+  final String type;
+  final String quantity;
+  final bool isDonation;
+  final String ownerUid;
+  final DateTime createdAt;
+
+  const _TrendingListing({
+    required this.id,
+    required this.name,
+    required this.type,
+    required this.quantity,
+    required this.isDonation,
+    required this.ownerUid,
+    required this.createdAt,
+  });
+}
+
 class _HomeState extends State<Home> {
   final TextEditingController _searchController = TextEditingController();
   final AISearchService _aiSearch = AISearchService();
@@ -29,6 +49,7 @@ class _HomeState extends State<Home> {
   bool _loading = false;
   double? _userLat;
   double? _userLng;
+  late Future<List<_TrendingListing>> _trendingFuture;
 
   Future<void> _loadUserLocation() async {
     final user = FirebaseAuth.instance.currentUser;
@@ -51,29 +72,102 @@ class _HomeState extends State<Home> {
     }
   }
 
+  Future<List<_TrendingListing>> _fetchTrendingListings() async {
+    final db = FirebaseFirestore.instance;
+
+    final donationsFuture = db
+        .collection('Donated Food')
+        .orderBy('createdAt', descending: true)
+        .limit(3)
+        .get();
+    final requestsFuture = db
+        .collection('Requested Food')
+        .orderBy('createdAt', descending: true)
+        .limit(3)
+        .get();
+
+    final results = await Future.wait([donationsFuture, requestsFuture]);
+    final donations = results[0];
+    final requests = results[1];
+
+    final merged = <_TrendingListing>[];
+
+    for (final doc in donations.docs) {
+      final data = doc.data();
+      final ts = data['createdAt'] as Timestamp?;
+      merged.add(
+        _TrendingListing(
+          id: doc.id,
+          name: (data['name'] ?? 'Unnamed').toString(),
+          type: (data['type'] ?? 'Unknown').toString(),
+          quantity: (data['quantity'] ?? 'N/A').toString(),
+          isDonation: true,
+          ownerUid: (data['requester'] ?? '').toString(),
+          createdAt: ts?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+        ),
+      );
+    }
+
+    for (final doc in requests.docs) {
+      final data = doc.data();
+      final ts = data['createdAt'] as Timestamp?;
+      merged.add(
+        _TrendingListing(
+          id: doc.id,
+          name: (data['name'] ?? 'Unnamed').toString(),
+          type: (data['type'] ?? 'Unknown').toString(),
+          quantity: (data['quantity'] ?? 'N/A').toString(),
+          isDonation: false,
+          ownerUid: (data['requester'] ?? '').toString(),
+          createdAt: ts?.toDate() ?? DateTime.fromMillisecondsSinceEpoch(0),
+        ),
+      );
+    }
+
+    merged.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return merged.take(3).toList();
+  }
+
+  void _openTrendingAction(_TrendingListing item) {
+    if (item.ownerUid.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Could not load listing owner info.')),
+      );
+      return;
+    }
+
+    if (item.isDonation) {
+      Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (context) => RequestConfirmation(
+            donationId: item.id,
+            donatorUid: item.ownerUid,
+          ),
+        ),
+      );
+      return;
+    }
+
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => DonateConfirmation(
+          requestId: item.id,
+          requesterUid: item.ownerUid,
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
     _loadUserLocation();
+    _trendingFuture = _fetchTrendingListings();
   }
 
   //initialize food item
   FoodItem f = FoodItem(id: "123", name: "name", type: "type", quantity: "quantity", expirationDate: DateTime.now(), address: "address", donor: "donor", createdAt: DateTime.now());
 
-  List<Widget> imageList = [
-    ClipRRect(
-      borderRadius: BorderRadius.circular(15.0),
-      child: Image.network("https://images.ctfassets.net/rric2f17v78a/7g4ABXMbw7Yxldu9rWucN7/0781ca0e17f180a6dad586f0d4eb0a7f/BakeryHero_2022-12-12-210752_zfsl.jpg", width: 375, height: 125, fit: BoxFit.cover),
-    ),
-    ClipRRect(
-      borderRadius: BorderRadius.circular(15.0),
-      child: Image.network("https://www.allrecipes.com/thmb/0xH8n2D4cC97t7mcC7eT2SDZ0aE=/1500x0/filters:no_upscale():max_bytes(150000):strip_icc()/6776_Pizza-Dough_ddmfs_2x1_1725-fdaa76496da045b3bdaadcec6d4c5398.jpg", width: 375, height: 125, fit: BoxFit.cover),
-    ),
-    ClipRRect(
-      borderRadius: BorderRadius.circular(15.0),
-      child: Image.network("https://popmenucloud.com/rilwatzf/c2b948b5-8105-4b14-86f1-a56f56b1a1ab.jpg", width: 375, height: 150, fit: BoxFit.cover)
-    ),
-  ];
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -229,24 +323,108 @@ class _HomeState extends State<Home> {
               ],
             ),
             Container(
-              child: Column(
-                children: [
-                  Container(
-                    height: 175,
-                    width: 375,
-                    margin: EdgeInsets.fromLTRB(10, 10, 10, 20),
-                    //padding: EdgeInsets.fromLTRB(10, 50, 10, 0),
-                    child: CarouselSlider(
-                      options: CarouselOptions(
-                        //height: 125,
-                        //aspectRatio: ,
-                        viewportFraction: 1,
-                        enlargeCenterPage: false,
-                      ),
-                      items:imageList.map((item)=>item).toList(),
+              child: FutureBuilder<List<_TrendingListing>>(
+                future: _trendingFuture,
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  }
+
+                  final items = snapshot.data ?? [];
+                  if (items.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(20),
+                      child: Text('No recent listings yet.'),
+                    );
+                  }
+
+                  final screenW = MediaQuery.sizeOf(context).width;
+                  final cardWidth = screenW - 25;
+
+                  return SizedBox(
+                    height: 260,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.fromLTRB(12, 10, 12, 20),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: items.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (context, index) {
+                        final item = items[index];
+                        return SizedBox(
+                          width: cardWidth,
+                          child: Card(
+                            clipBehavior: Clip.antiAlias,
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(12),
+                              onTap: () => _openTrendingAction(item),
+                              child: Stack(
+                                fit: StackFit.expand,
+                                children: [
+                                  Image.network(
+                                    categoryImageUrl(item.type),
+                                    fit: BoxFit.cover,
+                                  ),
+                                  Container(color: Colors.black.withOpacity(0.45)),
+                                  Padding(
+                                    padding: const EdgeInsets.all(12),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Expanded(
+                                              child: Text(
+                                                item.name,
+                                                maxLines: 1,
+                                                overflow: TextOverflow.ellipsis,
+                                                style: const TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.white,
+                                                ),
+                                              ),
+                                            ),
+                                            Chip(
+                                              label: Text(
+                                                item.isDonation ? 'Donation' : 'Request',
+                                                style: const TextStyle(fontSize: 11),
+                                              ),
+                                              visualDensity: VisualDensity.compact,
+                                            ),
+                                          ],
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          '${item.type} • ${item.quantity}',
+                                          style: const TextStyle(color: Colors.white),
+                                        ),
+                                        const Spacer(),
+                                        Align(
+                                          alignment: Alignment.centerRight,
+                                          child: FilledButton(
+                                            onPressed: () => _openTrendingAction(item),
+                                            style: FilledButton.styleFrom(
+                                              backgroundColor: Colors.white,
+                                              foregroundColor: Colors.black,
+                                            ),
+                                            child: Text(item.isDonation ? 'Request' : 'Donate'),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                  ),
-                ],
+                  );
+                },
               ),
             ),
             Row(

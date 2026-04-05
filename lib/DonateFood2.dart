@@ -319,7 +319,7 @@ class _DonateFood2State extends State<DonateFood2> {
                   children: [
                     SizedBox(width: 25,),
                     Text(
-                      'Earliest Expiration Date',
+                      'Expiration Date',
                       style: TextStyle(
                         fontSize: 15,
                         color: Colors.black,

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:communityplateproject2/RequestConfirmation.dart';
+import 'package:communityplateproject2/category_images.dart';
 
 class RequestHelper extends StatelessWidget {
   final String id; // requestId
@@ -52,36 +53,20 @@ class RequestHelper extends StatelessWidget {
                   fit: BoxFit.cover,
                 );
               },
-            ) : type == 'Fruits' ? Image.network(
-              'https://res.cloudinary.com/hz3gmuqw6/image/upload/c_fill,h_450,q_auto,w_710/f_auto/wip--21-healthiest-fruits-to-eat-in-2024-php3RGRfc',
+            ) : Image.network(
+              categoryImageUrl(type),
               width: 375,
               height: 175,
               fit: BoxFit.cover,
-            ) : type == 'Meat' ? Image.network(
-              'https://res.cloudinary.com/hz3gmuqw6/image/upload/c_fill,h_450,q_auto,w_710/f_auto/wip--21-healthiest-fruits-to-eat-in-2024-php3RGRfc',
-              width: 375,
-              height: 175,
-              fit: BoxFit.cover,
-            ) : type == 'Grains' ? Image.network('https://www.eatright.org/-/media/images/eatright-landing-pages/grainslp_804x482.jpg?h=482&w=804&rev=d44c22d03d0b452a9e266ff827d25534&hash=C170BE6A1B67C3A04A27A2F1A906E568',
-                width: 375,
-                height: 175,
-                fit: BoxFit.cover
-            ) : type == 'Vegetables' ? Image.network('https://cdn.britannica.com/17/196817-159-9E487F15/vegetables.jpg',
-                width: 375,
-                height: 175,
-                fit: BoxFit.cover
-            ) : type == 'Snacks' ? Image.network('https://media.theeverymom.com/wp-content/uploads/2023/08/22105814/healthy-after-school_snacks-banana-sushi-rolls-the-everymom11.jpg',
-                width: 375,
-                height: 175,
-                fit: BoxFit.cover
-            ) : type == 'Other' ? Image.network('ttps://www.shutterstock.com/image-photo/assortment-baked-goods-displayed-on-600nw-2575371219.jpg',
-                width: 375,
-                height: 175,
-                fit: BoxFit.cover
-            ) : Image.asset('assets/images/placeholder.png',
-                width: 375,
-                height: 175,
-                fit: BoxFit.cover)
+              errorBuilder: (context, error, stackTrace) {
+                return Image.asset(
+                  'assets/images/placeholder.png',
+                  width: 375,
+                  height: 175,
+                  fit: BoxFit.cover,
+                );
+              },
+            )
           ),
           const SizedBox(height: 15),
           Row(

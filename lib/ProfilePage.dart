@@ -3,6 +3,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:communityplateproject2/LoginPage.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 class profile extends StatefulWidget {
   const profile({super.key});
@@ -15,6 +17,42 @@ class _profileState extends State<profile> {
   final User? currentUser = FirebaseAuth.instance.currentUser;
   final DateFormat _fmt = DateFormat('MM/dd/yyyy hh:mm a');
 
+  Future<void> _setLocation() async {
+    try{
+      LocationPermission permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+      }
+      if (permission == LocationPermission.deniedForever) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Location permission permanently denied. Please enable it in your settings.'))
+        );
+        return;
+      }
+
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      final placemarks = await placemarkFromCoordinates(position.latitude, position.longitude);
+
+      final place = placemarks.first;
+      final address = "${place.street}, ${place.locality}, ${place.administrativeArea}, ${place.postalCode}";
+      final uid = FirebaseAuth.instance.currentUser!.uid;
+      await FirebaseFirestore.instance.collection('users').doc(uid).set({
+        'location': GeoPoint(position.latitude, position.longitude),
+        'address': address,
+      }, SetOptions(merge: true));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Location updated successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to set location: $e')),
+      );
+    }
+  }
+  
   @override
   Widget build(BuildContext context) {
     if (currentUser == null) {
@@ -84,6 +122,14 @@ class _profileState extends State<profile> {
                 Text("Name: ${data['name'] ?? 'No name'}"),
                 Text("Email: ${data['email'] ?? currentUser?.email ?? 'No email'}"),
                 Text("Address: ${data['address'] ?? 'No address'}"),
+
+                const SizedBox(height: 15),
+                FilledButton.icon(
+                  onPressed: _setLocation,
+                  icon: const Icon(Icons.location_on),
+                  label: const Text('Set My Location'),
+                ),
+
                 const SizedBox(height: 30),
                 Center(
                   child: FilledButton.icon(
